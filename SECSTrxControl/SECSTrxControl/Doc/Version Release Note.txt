@@ -1,0 +1,20 @@
+**********************************************
+*  SECSTrxControl
+*  Latest modifications record
+*  Date  : 2015/06/02
+*  Author: 
+*  Mail  : 
+*  Tel   : 03-5783280
+**********************************************
+***v2.0.0.2 2017/07/11
+	*Bug fix 
+	--修正在收到不正確的Filed Count時，不會回復S9F7的問題。
+***v2.0.0.1 2017/04/12
+	*Bug fix 
+	--修正Keeping time 功能失效的問題。(原因:在Disconnect的時候關閉的順序不正確)
+	--修正再Raw Parse to SXFY時，並非為 ListElement的格式，卻使用ListElementType去做比較的問題。
+	*功能增加
+	--加入斷線時Log的紀錄
+***v2.0.0.0
+	*Initial
+	--由版本V0.1.0.4分支

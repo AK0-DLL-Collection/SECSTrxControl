@@ -1,0 +1,207 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{918D6411-D3D2-4FD2-ADBC-1735ECC70E14}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>com.mirle.ibg3k0.stc</RootNamespace>
+    <AssemblyName>SECSTrxControl</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <PublishUrl>發行\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\SECSTrxControl.XML</DocumentationFile>
+    <RegisterForComInterop>false</RegisterForComInterop>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="hasp_net_windows, Version=7.1.1.42581, Culture=neutral, PublicKeyToken=56120be447701319, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>DLL\hasp_net_windows.dll</HintPath>
+    </Reference>
+    <Reference Include="Interop.QSACTIVEXLib">
+      <HintPath>DLL\Interop.QSACTIVEXLib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Interop.QSXACTIVEXLib">
+      <HintPath>DLL\Interop.QSXACTIVEXLib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Ionic.Zip, Version=1.9.1.8, Culture=neutral, PublicKeyToken=edbe51ad942a3f5c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>DLL\Ionic.Zip.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>DLL\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IO.Abstractions, Version=1.4.0.32, Culture=neutral, PublicKeyToken=d480b5b72fb413da, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>DLL\System.IO.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Common\IBreakConvWait.cs" />
+    <Compile Include="Common\PropertyChangedVO.cs" />
+    <Compile Include="Common\SecsElement.cs" />
+    <Compile Include="Common\SECSEventArgs.cs" />
+    <Compile Include="Common\SECSHandler.cs" />
+    <Compile Include="Common\SECS\HostConnection.cs" />
+    <Compile Include="Common\SECS\IFReceiveHandler.cs" />
+    <Compile Include="Common\SECS\SECSAgent.cs" />
+    <Compile Include="Common\SECS\SECSConnection.cs" />
+    <Compile Include="Common\SECS\SECSFormatException.cs" />
+    <Compile Include="Common\SEUtility.cs" />
+    <Compile Include="Common\TrxSECS.cs" />
+    <Compile Include="Data\SecsData\S9F1.cs" />
+    <Compile Include="Data\SecsData\S9F3.cs" />
+    <Compile Include="Data\SecsData\S9F5.cs" />
+    <Compile Include="Data\SecsData\S9F7.cs" />
+    <Compile Include="Data\SecsData\S9F9.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F1.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F11.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F12.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F17.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F2.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F3.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F5.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F6.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F75.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F76.cs" />
+    <Compile Include="Data\SecsData\Sample\S2F17.cs" />
+    <Compile Include="Data\SecsData\Sample\S2F21.cs" />
+    <Compile Include="Data\SecsData\Sample\S2F31.cs" />
+    <Compile Include="Data\SecsData\Sample\S2F32.cs" />
+    <Compile Include="Data\SecsData\Sample\S2F41.cs" />
+    <Compile Include="Data\SecsData\Sample\S5F103.cs" />
+    <Compile Include="Data\SecsData\Sample\S5F104.cs" />
+    <Compile Include="Data\SecsData\Sample\S5F5.cs" />
+    <Compile Include="Data\SecsData\Sample\S5F6.cs" />
+    <Compile Include="Data\SecsData\Sample\S6F103.cs" />
+    <Compile Include="Data\SecsData\Sample\S6F11.cs" />
+    <Compile Include="Data\SecsData\Sample\S6F3.cs" />
+    <Compile Include="Data\SecsData\Sample\S7F19.cs" />
+    <Compile Include="Data\SecsData\Sample\S7F20.cs" />
+    <Compile Include="Data\SecsData\Sample\S7F25.cs" />
+    <Compile Include="Data\SecsData\Sample\S7F26.cs" />
+    <Compile Include="Data\SecsData\Sample\S7F71.cs" />
+    <Compile Include="Data\SecsData\Sample\S1F4.cs" />
+    <Compile Include="Data\SecsData\Sample\SECSConst.cs" />
+    <Compile Include="Data\SecsData\Sample\S2F103.cs" />
+    <Compile Include="Data\SecsData\SXFY.cs" />
+    <Compile Include="License\AutomationLicenseKey.cs" />
+    <Compile Include="License\ILicenseKey.cs" />
+    <Compile Include="License\ILicenseKeyProtect.cs" />
+    <Compile Include="License\LicenseKeyException.cs" />
+    <Compile Include="License\SimpleLicenseKey.cs" />
+    <Compile Include="License\TrialLicenseKey.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Doc\SECS類別定義與使用說明.docx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="apidsp_windows.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="apidsp_windows_x64.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DLL\hasp_net_windows.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Doc\Version Release Note.txt" />
+    <Content Include="hasp_windows_101490.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="hasp_windows_x64_101490.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="DLL\Interop.QSACTIVEXLib.dll" />
+    <Content Include="DLL\Interop.QSXACTIVEXLib.dll" />
+    <Content Include="DLL\Ionic.Zip.dll" />
+    <Content Include="DLL\NLog.dll" />
+    <Content Include="DLL\System.IO.Abstractions.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.5">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.5 %28x86 和 x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Config\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
