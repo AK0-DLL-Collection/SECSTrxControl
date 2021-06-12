@@ -19,6 +19,8 @@
 //**********************************************************************************
 // 2017/04/14    Kevin Wei      N/A            B0.01   修改在非"ListElement"還使用"ListElementType"，因此將ListElementType改為Type
 // 2017/07/11    Kevin Wei      N/A            B0.02   修正在收到不正確的Filed Count時，不會回復S9F7的問題。
+// 2017/07/21    Kevin Wei      N/A            B0.03   增加I2、I4、U1、U2、U4的格式轉換。
+// 2017/07/21    Kevin Wei      N/A            B0.04   增加判斷如果是UNKNOWN的型別，則忽略確認(回復S9F7)的部分。
 //**********************************************************************************
 using System;
 using System.Collections.Generic;
@@ -45,6 +47,10 @@ namespace com.mirle.ibg3k0.stc.Common
             this.agent = agent;
         }
 
+        public SXFY Parse<T>(SECSEventArgs e, T target_obj)
+        {
+            return Parse<T>(e);
+        }
         public SXFY Parse<T>(SECSEventArgs e)
         {
             SXFY tmp = (SXFY)Activator.CreateInstance(typeof(T));
@@ -633,9 +639,17 @@ namespace com.mirle.ibg3k0.stc.Common
                                 }
                                 subArray[index] = ItemData as string;
                             }
-                            else if (subItemType == QSACTIVEXLib.SECSII_DATA_TYPE.INT_1_TYPE)
+                            //B0.03 else if (subItemType == QSACTIVEXLib.SECSII_DATA_TYPE.INT_1_TYPE)
+                            else if (subItemType == QSACTIVEXLib.SECSII_DATA_TYPE.INT_1_TYPE    //B0.03
+                                    || subItemType == QSACTIVEXLib.SECSII_DATA_TYPE.INT_2_TYPE  //B0.03
+                                    || subItemType == QSACTIVEXLib.SECSII_DATA_TYPE.INT_4_TYPE  //B0.03
+                                    || subItemType == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_1_TYPE //B0.03
+                                    || subItemType == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_2_TYPE //B0.03
+                                    || subItemType == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_4_TYPE)//B0.03
                             {
-                                subArray[index] = Convert.ToString(ItemData);
+                                //subArray[index] = Convert.ToString(ItemData);
+                                int[] U1 = (int[])ItemData;
+                                subArray[index] = Convert.ToString(U1[0]);
                             }
                         }
                         field.SetValue(sxfy, subArray);
@@ -699,7 +713,8 @@ namespace com.mirle.ibg3k0.stc.Common
                 try
                 {
                     //B0.01 if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.ListElementType))
-                    if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.Type))//B0.01
+                    if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.Type)//B0.01
+                        && QSACTIVEXLib.SECSII_DATA_TYPE.UNKNOWN_TYPE != SecsElement.convertToSECSIIDataType(secsElement.Type)) //B0.04
                     {
                         throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[Field:{1}]",
                             streamFunctionName, field.Name));
@@ -727,7 +742,8 @@ namespace com.mirle.ibg3k0.stc.Common
                 try
                 {
                     //B0.01 if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.ListElementType))
-                    if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.Type))//B0.01
+                    if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.Type)  //B0.01
+                        && QSACTIVEXLib.SECSII_DATA_TYPE.UNKNOWN_TYPE != SecsElement.convertToSECSIIDataType(secsElement.Type))//B0.04
                     {
                         throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[Field:{1}]",
                             streamFunctionName, field.Name));
@@ -749,6 +765,105 @@ namespace com.mirle.ibg3k0.stc.Common
                         streamFunctionName, sxfy.SystemByte, field.Name)); //A0.05
                 }
             }
+            //B0.04 Start
+            else if (lItemType == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_1_TYPE)
+            {
+                try
+                {
+                    if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.Type)
+                        && QSACTIVEXLib.SECSII_DATA_TYPE.UNKNOWN_TYPE != SecsElement.convertToSECSIIDataType(secsElement.Type)) //A0.09
+                    {
+                        throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[Field:{1}]",
+                            streamFunctionName, field.Name));
+                    }
+                    offset = agent.getQSWrapper().DataItemIn(ref rawData, offset, QSACTIVEXLib.SECSII_DATA_TYPE.UINT_1_TYPE,
+                                       out lItemNum, ref ItemData);
+                    int[] U1 = (int[])ItemData;
+
+                    //field.SetValue(sxfy, U1[0].ToString());
+                    field.SetValue(sxfy, U1 != null ? string.Join(",", U1) : null);
+                }
+                catch (Exception ex)
+                {
+                    trxLogger.ErrorException("parseFromSCES Exception!", ex);
+                    throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[System Byte:{1}][Field:{2}]",
+                        streamFunctionName, sxfy.SystemByte, field.Name)); //A0.05
+                }
+            }
+            else if (lItemType == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_2_TYPE)
+            {
+                try
+                {
+                    if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.Type)
+                        && QSACTIVEXLib.SECSII_DATA_TYPE.UNKNOWN_TYPE != SecsElement.convertToSECSIIDataType(secsElement.Type)) //A0.09
+                    {
+                        throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[Field:{1}]",
+                            streamFunctionName, field.Name));
+                    }
+                    offset = agent.getQSWrapper().DataItemIn(ref rawData, offset, QSACTIVEXLib.SECSII_DATA_TYPE.UINT_2_TYPE,
+                                       out lItemNum, ref ItemData);
+
+                    int[] U2 = (int[])ItemData;
+                    //field.SetValue(sxfy, U2[0].ToString());
+                    field.SetValue(sxfy, U2 != null ? string.Join(",", U2) : null);
+                }
+                catch (Exception ex)
+                {
+                    trxLogger.ErrorException("parseFromSCES Exception!", ex);
+                    throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[System Byte:{1}][Field:{2}]",
+                        streamFunctionName, sxfy.SystemByte, field.Name)); //A0.05
+                }
+            }
+            else if (lItemType == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_4_TYPE)
+            {
+                try
+                {
+                    if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.Type)
+                        && QSACTIVEXLib.SECSII_DATA_TYPE.UNKNOWN_TYPE != SecsElement.convertToSECSIIDataType(secsElement.Type)) //A0.09
+                    {
+                        throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[Field:{1}]",
+                            streamFunctionName, field.Name));
+                    }
+                    offset = agent.getQSWrapper().DataItemIn(ref rawData, offset, QSACTIVEXLib.SECSII_DATA_TYPE.UINT_4_TYPE,
+                                       out lItemNum, ref ItemData);
+
+                    int[] U4 = (int[])ItemData;
+                    //field.SetValue(sxfy, U4 == null ? string.Empty : U4[0].ToString()); //2015/10/08 修正By Kevin
+                    field.SetValue(sxfy, U4 != null ? string.Join(",", U4) : null); //2015/10/08 修正By Kevin
+                }
+                catch (Exception ex)
+                {
+                    trxLogger.ErrorException("parseFromSCES Exception!", ex);
+                    throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[System Byte:{1}][Field:{2}]",
+                        streamFunctionName, sxfy.SystemByte, field.Name)); //A0.05
+                }
+            }
+            else if (lItemType == QSACTIVEXLib.SECSII_DATA_TYPE.BOOLEAN_TYPE)
+            {
+                try
+                {
+                    if (lItemType != SecsElement.convertToSECSIIDataType(secsElement.Type)
+                        && QSACTIVEXLib.SECSII_DATA_TYPE.UNKNOWN_TYPE != SecsElement.convertToSECSIIDataType(secsElement.Type)) //A0.09
+                    {
+                        throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[Field:{1}]",
+                            streamFunctionName, field.Name));
+                    }
+                    offset = agent.getQSWrapper().DataItemIn(ref rawData, offset, QSACTIVEXLib.SECSII_DATA_TYPE.BOOLEAN_TYPE,
+                                       out lItemNum, ref ItemData);
+
+                    int[] i = (int[])ItemData;
+                    //Boolean b = i[0] == 0 ? false : true;
+                    //field.SetValue(sxfy, b.ToString());
+                    field.SetValue(sxfy, i);
+                }
+                catch (Exception ex)
+                {
+                    trxLogger.ErrorException("parseFromSCES Exception!", ex);
+                    throw new SECSFormatException(string.Format("Stream Function[{0}] Format Error.[System Byte:{1}][Field:{2}]",
+                        streamFunctionName, sxfy.SystemByte, field.Name)); //A0.05
+                }
+            }
+            //B0.04 End
             else
             {
                 //A0.05                offset = dataItemSkip(ref rawData, offset, 1);

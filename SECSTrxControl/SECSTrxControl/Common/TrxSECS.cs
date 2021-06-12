@@ -15,6 +15,12 @@
 // 2014/12/10    Hayes Chen     N/A            A0.04   增加中斷Conversation Timeout的等待
 // 2016/03/09    Hayes Chen     N/A            A0.05   將Thread.Sleep的用法改成SpinWait()
 //**********************************************************************************
+//**********************************************************************************
+// 2018/03/21    Kevin Wei      N/A            B0.01   修正當有註冊replySystemErrorHandler時，
+//                                                     但設備回報S9FX以後，程式會當掉的問題。
+//                                                     並加入replySystemErrorHandler、replyAbortHandler
+//                                                     的Exception Handle。
+//**********************************************************************************
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -296,11 +302,11 @@ namespace com.mirle.ibg3k0.stc.Common
             string abortSF = inSecs.getAbortFunctionName();
             try
             {
-                handler = delegate(Object _sender, SECSEventArgs _e)
+                handler = delegate (Object _sender, SECSEventArgs _e)
                 {
                     replyHandler<TSource>(_sender, _e, predicate, ref inSecs);
                 };
-                systemErrorHandler = delegate(Object _sender, SECSEventArgs _e)             //A0.03
+                systemErrorHandler = delegate (Object _sender, SECSEventArgs _e)             //A0.03
                 {
                     replySystemErrorHandler(_sender, _e, ref inSecs);                       //A0.03
                 };
@@ -311,7 +317,7 @@ namespace com.mirle.ibg3k0.stc.Common
                 //A0.02 Begin
                 if (inSecs.CanAbort)
                 {
-                    abortHandler = delegate(Object _sender, SECSEventArgs _e)
+                    abortHandler = delegate (Object _sender, SECSEventArgs _e)
                     {
                         replyAbortHandler(_sender, _e, ref inSecs);
                     };
@@ -324,7 +330,7 @@ namespace com.mirle.ibg3k0.stc.Common
                 if (continueConversation)
                 {
                     convReceiveSF = (convSecs as SXFY).StreamFunction;
-                    convReceiveHandler = delegate(Object _sender, SECSEventArgs _e)
+                    convReceiveHandler = delegate (Object _sender, SECSEventArgs _e)
                     {
                         conversationHandler<TSource2>(_sender, _e, convPredicate);
                     };
@@ -444,24 +450,33 @@ namespace com.mirle.ibg3k0.stc.Common
         /// <param name="inSecs"></param>
         protected virtual void replyAbortHandler(object sender, SECSEventArgs e, ref SXFY inSecs)
         {
+            int threadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
             lock (handlerLock)
             {
-                if (hasRtn || !inSecs.CanAbort)
+                try //B0.01
                 {
-                    return;
+                    if (hasRtn || !inSecs.CanAbort)
+                    {
+                        return;
+                    }
+                    if (inSecs.SystemByte != e.SystemBytes)
+                    {
+                        return;
+                    }
+                    //
+                    SXFY tmpSXFY = e.secsHandler.Parse<SXFY>(e);
+                    trxLogger.Debug("Receive Abort Stream Function SXF0");
+                    abortSXFY = tmpSXFY;
+                    abortSXFY.StreamFunction = inSecs.getAbortFunctionName();
+                    //
+                    hasAbort = true;
+                    hasRtn = true;
                 }
-                if (inSecs.SystemByte != e.SystemBytes)
+                catch (Exception ex)
                 {
-                    return;
+                    trxLogger.Warn("in reply abort Handler Exception[threadID:{0}][e.SystemBytes:{1}]:{2}", threadID, e.SystemBytes, ex);
                 }
-                //
-                SXFY tmpSXFY = e.secsHandler.Parse<SXFY>(e);
-                trxLogger.Debug("Receive Abort Stream Function SXF0");
-                abortSXFY = tmpSXFY;
-                abortSXFY.StreamFunction = inSecs.getAbortFunctionName();
-                //
-                hasAbort = true;
-                hasRtn = true;
+
             }
         }
 
@@ -473,22 +488,51 @@ namespace com.mirle.ibg3k0.stc.Common
         /// <param name="inSecs"></param>
         protected virtual void replySystemErrorHandler(object sender, SECSEventArgs e, ref SXFY inSecs)
         {
+            int threadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
             lock (handlerLock)
             {
-                if (hasRtn)
+                try //B0.01
                 {
-                    return;
+                    if (hasRtn)
+                    {
+                        return;
+                    }
+                    if (inSecs.SystemByte != e.SystemBytes)
+                    {
+                        return;
+                    }
+
+                    //B0.01 SXFY tmpSXFY = e.secsHandler.Parse<SXFY>(e);
+                    //B0.01 Start 
+                    SXFY tmpSXFY = null;
+                    if (e.S == SECSAgent.SystemErrorStreamNumber)
+                    {
+                        switch (e.F)
+                        {
+                            case 1: tmpSXFY = e.secsHandler.Parse<S9F1>(e); break;
+                            case 3: tmpSXFY = e.secsHandler.Parse<S9F3>(e); break;
+                            case 5: tmpSXFY = e.secsHandler.Parse<S9F5>(e); break;
+                            case 7: tmpSXFY = e.secsHandler.Parse<S9F7>(e); break;
+                            case 9: tmpSXFY = e.secsHandler.Parse<S9F9>(e); break;
+                            default: tmpSXFY = e.secsHandler.Parse<SXFY>(e); break;
+                        }
+                    }
+                    else
+                    {
+                        tmpSXFY = e.secsHandler.Parse<SXFY>(e);
+                    }
+                    //B0.01 Start
+
+                    trxLogger.Debug("Receive System Error Stream Function S9FY");
+                    systemErrorSXFY = tmpSXFY;
+                    systemErrorSXFY.StreamFunction = string.Format("S{0}F{1}", e.S, e.F);
+                    hasSystemError = true;
+                    hasRtn = true;
                 }
-                if (inSecs.SystemByte != e.SystemBytes)
+                catch (Exception ex)
                 {
-                    return;
+                    trxLogger.Warn("in reply system error Handler Exception[threadID:{0}][e.SystemBytes:{1}]:{2}", threadID, e.SystemBytes, ex);
                 }
-                SXFY tmpSXFY = e.secsHandler.Parse<SXFY>(e);
-                trxLogger.Debug("Receive System Error Stream Function S9FY");
-                systemErrorSXFY = tmpSXFY;
-                systemErrorSXFY.StreamFunction = string.Format("S{0}F{1}", e.S, e.F);
-                hasSystemError = true;
-                hasRtn = true;
             }
         }
 
@@ -661,7 +705,7 @@ namespace com.mirle.ibg3k0.stc.Common
                 receiveSF = (outSecs as SXFY).StreamFunction;
                 if (registerHandler)
                 {
-                    convReceiveHandler = delegate(Object _sender, SECSEventArgs _e)
+                    convReceiveHandler = delegate (Object _sender, SECSEventArgs _e)
                     {
                         conversationHandler<TSource>(_sender, _e, predicate);
                     };

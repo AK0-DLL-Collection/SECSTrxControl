@@ -17,6 +17,10 @@
 // 2015/06/11    Kevin Wei      N/A            A0.05   將Parser2RawData中Theard的設定:MaxtTreadCount、SleepCount、SleepTime設成Config。
 // 2016/03/09    Kevin Wei      N/A            A0.06   將Thread.Sleep的用法改成SpinWait()
 //**********************************************************************************
+// 2017/07/21    Kevin Wei      N/A            B0.01   增加U1、U2、U4、Boolean的RowData型別轉換。
+// 2017/07/21    Kevin Wei      N/A            B0.02   將原本會用空格補滿的String，給Trim()掉。(TODO:要改成用Config設定)
+// 2018/07/02    Kevin Wei      N/A            B0.03   加入使用Config來設定String是否要Trim。
+//**********************************************************************************
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,6 +34,7 @@ using NLog;
 
 namespace com.mirle.ibg3k0.stc.Data.SecsData
 {
+    [Serializable]
     public class SXFY
     {
         private static Logger logger = NLog.LogManager.GetLogger("SECSTrxLogger");
@@ -81,6 +86,8 @@ namespace com.mirle.ibg3k0.stc.Data.SecsData
         public int Parser2RawData_MaxThread = 1;   //A0.05
         public int Parser2RawData_SleepCount = 50;   //A0.05
         public int Parser2RawData_SleepTime = 100;  //A0.05
+        private static bool IsFillInWhiteSpace = true;
+
 
         public int getS()
         {
@@ -160,6 +167,10 @@ namespace com.mirle.ibg3k0.stc.Data.SecsData
             rawData = diStruct.RawData;
         }
 
+        public static void setIsFillInWhiteSpaceForString(bool is_fill)
+        {
+            IsFillInWhiteSpace = is_fill;
+        }
         private void doParser2RawData(Object diStructObj)
         {
             DataItemStruct diStruct = diStructObj as DataItemStruct;
@@ -283,16 +294,45 @@ namespace com.mirle.ibg3k0.stc.Data.SecsData
                                     data = string.Empty;
                                     //                            continue; 
                                 }
-                                int elementLength = attr.ListElementLength;
-                                Object tmpObj = data.PadRight(elementLength, ' ');
-                                QSACTIVEXLib.SECSII_DATA_TYPE dataTyp = QSACTIVEXLib.SECSII_DATA_TYPE.ASCII_TYPE;
-                                dataTyp = SecsElement.convertToSECSIIDataType(attr.ListElementType);
-                                int length = attr.ListElementLength;
-                                SXFYConvertLogger.Debug("Begin dataItemOut, obj element type is string, do element[SystemByte:{0}]", SystemByte);
-                                //                                parseSizeCtr.increaseParseSize();
-                                qsWrapper.DataItemOut(ref rawData, length, dataTyp, ref tmpObj);
-                                //                                dataItemOut(ref rawData, length, dataTyp, ref tmpObj, ref qsWrapper);
-                                SXFYConvertLogger.Debug("End dataItemOut, obj element type is string, do element[SystemByte:{0}]", SystemByte);
+                                if (attr.ListElementType == SecsElement.SecsElementType.TYPE_ASCII)
+                                {
+                                    //B0.03 int elementLength = attr.ListElementLength;
+                                    //B0.03 Object tmpObj = data.PadRight(elementLength, ' ');
+                                    Object tmpObj = null;                           //B0.03 
+                                    if (IsFillInWhiteSpace)                         //B0.03 
+                                    {                                               //B0.03 
+                                        int elementLength = attr.ListElementLength; //B0.03 
+                                        data = data.PadRight(elementLength, ' ');   //B0.03 
+                                    }                                               //B0.03 
+                                    else                                            //B0.03 
+                                    {                                               //B0.03 
+                                        data = data.Trim();                         //B0.03 
+                                    }                                               //B0.03 
+                                    tmpObj = data;                                  //B0.03 
+
+                                    QSACTIVEXLib.SECSII_DATA_TYPE dataTyp = QSACTIVEXLib.SECSII_DATA_TYPE.ASCII_TYPE;
+                                    dataTyp = SecsElement.convertToSECSIIDataType(attr.ListElementType);
+
+                                    //B0.03 int length = attr.ListElementLength;
+                                    int length = data.Length;//B0.03
+
+
+                                    SXFYConvertLogger.Debug("Begin dataItemOut, obj element type is string, do element[SystemByte:{0}]", SystemByte);
+                                    //                                parseSizeCtr.increaseParseSize();
+                                    qsWrapper.DataItemOut(ref rawData, length, dataTyp, ref tmpObj);
+                                    //                                dataItemOut(ref rawData, length, dataTyp, ref tmpObj, ref qsWrapper);
+                                    SXFYConvertLogger.Debug("End dataItemOut, obj element type is string, do element[SystemByte:{0}]", SystemByte);
+                                }
+                                else
+                                {
+                                    int length = attr.ListElementLength;
+
+                                    QSACTIVEXLib.SECSII_DATA_TYPE dataTyp = QSACTIVEXLib.SECSII_DATA_TYPE.ASCII_TYPE;
+                                    dataTyp = SecsElement.convertToSECSIIDataType(attr.ListElementType);
+
+                                    parse_uint_X_Type_to_Rawdata(ref rawData, qsWrapper, data, length, dataTyp);
+
+                                }
                             }
                             //A0.01 End
                         }
@@ -411,26 +451,78 @@ namespace com.mirle.ibg3k0.stc.Data.SecsData
                         int length = attr.Length;
                         QSACTIVEXLib.SECSII_DATA_TYPE dataTyp = QSACTIVEXLib.SECSII_DATA_TYPE.ASCII_TYPE;
                         dataTyp = SecsElement.convertToSECSIIDataType(attr.Type);
+                        int[] bAry = null;
                         if (dataTyp == QSACTIVEXLib.SECSII_DATA_TYPE.BINARY_TYPE)
                         {
-                            string[] bSAry = data.Split(new string[] { " 0x" }, length, StringSplitOptions.RemoveEmptyEntries);
-                            int[] bAry = new int[length];
-                            Object bAryObj = null;
-                            for (int ix = 0; ix < bSAry.Length; ++ix)
+                            if (string.IsNullOrWhiteSpace(data))
                             {
-                                int bVal = 0;
-                                try { bVal = Convert.ToInt32(bSAry[ix], 16); }
-                                catch { }
-                                bAry[ix] = bVal;
+                                bAry = new int[0];
                             }
-                            bAryObj = bAry;
+                            else
+                            {
+                                string[] bSAry = data.Split(new string[] { " 0x" }, length, StringSplitOptions.RemoveEmptyEntries);
+                                bAry = new int[length];
+                                for (int ix = 0; ix < bSAry.Length; ++ix)
+                                {
+                                    int bVal = 0;
+                                    try { bVal = Convert.ToInt32(bSAry[ix], 16); }
+                                    catch { }
+                                    bAry[ix] = bVal;
+                                }
+                            }
+                            Object bAryObj = bAry;
                             SXFYConvertLogger.Debug("Begin dataItemOut, this field is binary[SystemByte:{0}]", SystemByte);
-                            qsWrapper.DataItemOut(ref rawData, length, dataTyp, ref bAryObj);
+                            qsWrapper.DataItemOut(ref rawData, bAry.Length, dataTyp, ref bAryObj);
                             SXFYConvertLogger.Debug("End dataItemOut, this field is binary[SystemByte:{0}]", SystemByte);
                         }
+                        //B0.01 Start
+                        else if (dataTyp == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_1_TYPE ||
+                                 dataTyp == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_2_TYPE ||
+                                 dataTyp == QSACTIVEXLib.SECSII_DATA_TYPE.UINT_4_TYPE)
+                        {
+                            parse_uint_X_Type_to_Rawdata(ref rawData, qsWrapper, data, length, dataTyp);
+                            //int itemp = 0;
+                            //int[] iAry = new int[length];
+                            //if (int.TryParse(data, out itemp))
+                            //{
+                            //    iAry[0] = itemp;
+                            //}
+                            //else
+                            //{
+                            //    SXFYConvertLogger.Debug("TryParse field data[{0}], this field is iAry[SystemByte:{1}]", data, SystemByte);
+                            //}
+                            //Object iAryObj = null;
+                            //iAryObj = iAry;
+                            //SXFYConvertLogger.Debug("Begin dataItemOut, this field is iAry[SystemByte:{0}]", SystemByte);
+                            //qsWrapper.DataItemOut(ref rawData, length, dataTyp, ref iAryObj);
+                            //SXFYConvertLogger.Debug("End dataItemOut, this field is iAry[SystemByte:{0}]", SystemByte);
+                        }
+                        else if (dataTyp == QSACTIVEXLib.SECSII_DATA_TYPE.BOOLEAN_TYPE)
+                        {
+                            int[] iAry = new int[length];
+                            iAry[0] = data.Equals(true.ToString()) ? 255 : 0;
+                            Object iAryObj = null;
+                            iAryObj = iAry;
+                            SXFYConvertLogger.Debug("Begin dataItemOut, this field is iAry[SystemByte:{0}]", SystemByte);
+                            qsWrapper.DataItemOut(ref rawData, length, dataTyp, ref iAryObj);
+                            SXFYConvertLogger.Debug("End dataItemOut, this field is iAry[SystemByte:{0}]", SystemByte);
+                        }
+                        //B0.01 End
                         else
                         {
-                            data = data.PadRight(length, ' ');
+                            //B0.02 data = data.PadRight(length, ' ');
+                            //B0.03 length = data.Trim().Length; //B0.02
+
+                            if (IsFillInWhiteSpace)                 //B0.03 
+                            {                                       //B0.03 
+                                data = data.PadRight(length, ' ');  //B0.03 
+                            }                                       //B0.03 
+                            else                                    //B0.03 
+                            {                                       //B0.03 
+                                data = data.Trim();                 //B0.03 
+                                length = data.Length;               //B0.03 
+                            }                                       //B0.03 
+
                             obj = (Object)data;
                             //                        if (attr.Type == SecsElement.SecsElementType.TYPE_ASCII)
                             //                        {
@@ -469,6 +561,34 @@ namespace com.mirle.ibg3k0.stc.Data.SecsData
                 logger.WarnException("parser2RawData Exception!", ex);
             }
             SXFYConvertLogger.Debug("Finish parser2RawData[SystemByte:{0}]", SystemByte);
+        }
+
+
+        private void parse_uint_X_Type_to_Rawdata(ref Object rawData, QSACTIVEXLib.QSWrapper qsWrapper, string data, int length, QSACTIVEXLib.SECSII_DATA_TYPE dataTyp)
+        {
+            int itemp = 0;
+            int[] iAry = null;
+            if (string.IsNullOrWhiteSpace(data))
+            {
+                iAry = new int[0];
+            }
+            else
+            {
+                iAry = new int[length];
+                if (int.TryParse(data, out itemp))
+                {
+                    iAry[0] = itemp;
+                }
+                else
+                {
+                    SXFYConvertLogger.Debug("TryParse field data[{0}], this field is iAry[SystemByte:{1}]", data, SystemByte);
+                }
+            }
+            Object iAryObj = null;
+            iAryObj = iAry;
+            SXFYConvertLogger.Debug("Begin dataItemOut, this field is iAry[SystemByte:{0}]", SystemByte);
+            qsWrapper.DataItemOut(ref rawData, iAry.Length, dataTyp, ref iAryObj);
+            SXFYConvertLogger.Debug("End dataItemOut, this field is iAry[SystemByte:{0}]", SystemByte);
         }
 
         //        public void parser2RawData(ref Object rawData, QSACTIVEXLib.QSWrapper qsWrapper)
@@ -825,6 +945,7 @@ namespace com.mirle.ibg3k0.stc.Data.SecsData
                 for (int i = 0; i < fields.Length; ++i)
                 {
                     Object obj = fields[i].GetValue(this);
+                    if (obj == null) continue;
                     if (fields[i].FieldType.IsInterface) { continue; }
 
                     if (fields[i].FieldType.IsArray)
@@ -896,88 +1017,88 @@ namespace com.mirle.ibg3k0.stc.Data.SecsData
                     else
 
                         if (fields[i].FieldType == typeof(String))
+                    {
+                        data = obj as String;
+                        //                        if (data == null || data.Length == 0) continue;
+                        if (data == null || data.Length == 0)
                         {
-                            data = obj as String;
-                            //                        if (data == null || data.Length == 0) continue;
-                            if (data == null || data.Length == 0)
-                            {
-                                data = string.Empty;
-                            }
-                            System.Attribute[] attrs = System.Attribute.GetCustomAttributes(fields[i]);
-                            SecsElement attr = null;
-                            foreach (System.Attribute a in attrs)
-                            {
-                                if (a is SecsElement)
-                                {
-                                    attr = (SecsElement)a;
-                                    break;
-                                }
-                            }
-                            if (attr == null) { continue; }
-                            if (attr.Type == SecsElement.SecsElementType.NOT_USED) { continue; }
-                            System.Console.WriteLine("Type:{0}, Length:{1}",
-                                        SecsElement.converToTypeID(attr.Type), attr.Length);
-                            string type = SecsElement.converToTypeID(attr.Type);
-                            int length = attr.Length;
-                            sw.Write(tabSpace + Space + CHAR_LESS_THAN);                   //<
-                            sw.Write(type);                             //L
-                            sw.Write(CHAR_LEFT_BRACKETS);               //[
-                            sw.Write(length);                           //長度
-                            sw.Write(CHAR_RIGHT_BRACKETS);              //]
-                            sw.Write(CHAR_BREAK);
-
-                            //sw.Write(fields[i].Name);
-                            //sw.Write(CHAR_BREAK);
-                            //sw.Write(CHAR_EQUAL);
-                            //sw.Write(CHAR_BREAK);
-                            
-                            sw.Write(CHAR_DOUBLE_QUOTATION_MARKS);      //"
-                            sw.Write(data);                             // Value
-                            sw.Write(CHAR_DOUBLE_QUOTATION_MARKS);      //"
-                            sw.Write(CHAR_LARGER_THAN);                 //>
-                            //sw.WriteLine(CHAR_LARGER_THAN);                 //>
-
-                            sw.Write(CHAR_BREAK);
-                            sw.Write(CHAR_LEFT_BRACKETS);               //[
-                            sw.Write(fields[i].Name);
-                            sw.WriteLine(CHAR_RIGHT_BRACKETS);              //]
-
-                            //                        continue;
+                            data = string.Empty;
                         }
-                        else
+                        System.Attribute[] attrs = System.Attribute.GetCustomAttributes(fields[i]);
+                        SecsElement attr = null;
+                        foreach (System.Attribute a in attrs)
+                        {
+                            if (a is SecsElement)
+                            {
+                                attr = (SecsElement)a;
+                                break;
+                            }
+                        }
+                        if (attr == null) { continue; }
+                        if (attr.Type == SecsElement.SecsElementType.NOT_USED) { continue; }
+                        System.Console.WriteLine("Type:{0}, Length:{1}",
+                                    SecsElement.converToTypeID(attr.Type), attr.Length);
+                        string type = SecsElement.converToTypeID(attr.Type);
+                        int length = attr.Length;
+                        sw.Write(tabSpace + Space + CHAR_LESS_THAN);                   //<
+                        sw.Write(type);                             //L
+                        sw.Write(CHAR_LEFT_BRACKETS);               //[
+                        sw.Write(length);                           //長度
+                        sw.Write(CHAR_RIGHT_BRACKETS);              //]
+                        sw.Write(CHAR_BREAK);
+
+                        //sw.Write(fields[i].Name);
+                        //sw.Write(CHAR_BREAK);
+                        //sw.Write(CHAR_EQUAL);
+                        //sw.Write(CHAR_BREAK);
+
+                        sw.Write(CHAR_DOUBLE_QUOTATION_MARKS);      //"
+                        sw.Write(data);                             // Value
+                        sw.Write(CHAR_DOUBLE_QUOTATION_MARKS);      //"
+                        sw.Write(CHAR_LARGER_THAN);                 //>
+                                                                    //sw.WriteLine(CHAR_LARGER_THAN);                 //>
+
+                        sw.Write(CHAR_BREAK);
+                        sw.Write(CHAR_LEFT_BRACKETS);               //[
+                        sw.Write(fields[i].Name);
+                        sw.WriteLine(CHAR_RIGHT_BRACKETS);              //]
+
+                        //                        continue;
+                    }
+                    else
 
                             if (fields[i].FieldType.BaseType == typeof(SXFY))
-                            {
-                                //System.Attribute[] attrs = System.Attribute.GetCustomAttributes(fields[i]);
-                                //SecsElement attr = null;
-                                //foreach (System.Attribute a in attrs)
-                                //{
-                                //    if (a is SecsElement)
-                                //    {
-                                //        attr = (SecsElement)a;
-                                //    }
-                                //}
-                                //if (attr == null) { continue; }
-                                //System.Console.WriteLine("Type:{0}, Length:{1}",
-                                //            SecsElement.converToTypeID(attr.Type), attr.Length);
-                                //string type = SecsElement.converToTypeID(attr.Type);
-                                //int length = attr.Length;
+                    {
+                        //System.Attribute[] attrs = System.Attribute.GetCustomAttributes(fields[i]);
+                        //SecsElement attr = null;
+                        //foreach (System.Attribute a in attrs)
+                        //{
+                        //    if (a is SecsElement)
+                        //    {
+                        //        attr = (SecsElement)a;
+                        //    }
+                        //}
+                        //if (attr == null) { continue; }
+                        //System.Console.WriteLine("Type:{0}, Length:{1}",
+                        //            SecsElement.converToTypeID(attr.Type), attr.Length);
+                        //string type = SecsElement.converToTypeID(attr.Type);
+                        //int length = attr.Length;
 
-                                //           sw.Write(CHAR_LESS_THAN);                   //<
-                                //           sw.Write(type);                             //L
-                                //           sw.Write(CHAR_LEFT_BRACKETS);               //[
-                                //           sw.Write(length);                           //長度
-                                //           sw.Write(CHAR_RIGHT_BRACKETS);              //]
+                        //           sw.Write(CHAR_LESS_THAN);                   //<
+                        //           sw.Write(type);                             //L
+                        //           sw.Write(CHAR_LEFT_BRACKETS);               //[
+                        //           sw.Write(length);                           //長度
+                        //           sw.Write(CHAR_RIGHT_BRACKETS);              //]
 
-                                subArray = (obj as SXFY);
-                                if (subArray != null)
-                                {
-                                    subArray.toSECSElement(tabSpace, sw);
-                                }
-                                //           sw.Write(CHAR_LARGER_THAN);                 //>
+                        subArray = (obj as SXFY);
+                        if (subArray != null)
+                        {
+                            subArray.toSECSElement(tabSpace, sw);
+                        }
+                        //           sw.Write(CHAR_LARGER_THAN);                 //>
 
-                                //continue;
-                            }
+                        //continue;
+                    }
 
                 }
                 //Test Begin

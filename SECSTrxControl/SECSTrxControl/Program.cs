@@ -128,9 +128,10 @@ namespace SECSTrxControl
         SECSAgent secsAgent = null;
         void doTestSecs()
         {
+            var ipAdr = System.Net.Dns.GetHostAddresses("redis.ohxc.mirle.com.tw");
             string localIP = "127.0.0.1";
             string remoteIP = "127.0.0.1";
-            int localPort = 6000;
+            int localPort = 7000;
             int remotePort = 6000;
             int t3Timeout = 30;
             int t5Timeout = 7;
@@ -187,6 +188,7 @@ namespace SECSTrxControl
             //            //secsAgent.start();
 
             secsAgent.addSECSReceivedHandler("S2F41", s2f41Receive);
+            secsAgent.addSECSConnectedHandler(Connection);
             ////            secsAgent.addSECSReceivedHandler("S1F6", s1f6Receive);
             //            #region Test Format
             ////            S1F6_SFCD4 s1f6 = new S1F6_SFCD4()
@@ -666,6 +668,11 @@ namespace SECSTrxControl
             {
                 logger.ErrorException("s2f41Receive Exception!", ex);
             }
+        }
+
+        protected void Connection(object sender, SECSEventArgs e)
+        {
+
         }
 
         protected void s2f41Receive(object sender, SECSEventArgs e)

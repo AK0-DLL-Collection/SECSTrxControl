@@ -110,6 +110,7 @@ namespace com.mirle.ibg3k0.stc.Common.SECS
         public delegate SECS_STREAM_FUNCTION_CHECK_RESULT DataIllegalCheck(string name, string value);
         private DataIllegalCheck dataIllegalCheck;
 
+
         public ILicenseKey LicenseKey { get { return licenseKey; } }
         private ILicenseKey licenseKey = null;
 
@@ -137,6 +138,7 @@ namespace com.mirle.ibg3k0.stc.Common.SECS
             //            licenseKey = new TrialLicenseKey(this);
             //            licenseKey = new SimpleLicenseKey(this);
             licenseKey = new AutomationLicenseKey(this);
+            //licenseKey = new SimpleLicenseKey(this);
             licenseKey.checkValidation();
             //            triggerEventQueue = new TriggerEventQueue(name, licenseKey);    //A0.02
             triggerEventQueue = new TriggerEventQueue(name);    //A0.02
@@ -162,7 +164,6 @@ namespace com.mirle.ibg3k0.stc.Common.SECS
                 T3Timeout, T5Timeout, T6Timeout, T7Timeout, T8Timeout, LinkTestTimer, DeviceID);
             sfTypeCheck = typeCheckFunction;
             this.dataIllegalCheck = dataIllegalCheck;
-
         }
         /// <summary>
         /// 將SECS Agent進行 refresh。
@@ -846,7 +847,7 @@ namespace com.mirle.ibg3k0.stc.Common.SECS
 
         public void onNotify(ChangeEventStruct _eventStruct)
         {
-            WaitCallback eventDelegate = delegate(object obj)
+            WaitCallback eventDelegate = delegate (object obj)
             {
                 ChangeEventStruct eventStruct = _eventStruct;
                 if (eventStruct.EventHandler != null)

@@ -16,6 +16,9 @@
 // 2015/08/18    Kevin Wei      N/A            A0.04   增加當尚未到要執行License Check時(即已超過間隔時間10分鐘)，就不會再次執行。
 // 2015/08/26    Kevin Wei      N/A            A0.05   將License Check的Check方式，由Log In/Log Out改為"encrypt"的比較方式。
 //**********************************************************************************
+//**********************************************************************************
+// 2018/02/23    Kevin Wei      N/A            B0.01   修改vendorCode，配合可以多區域使用。(目前增加China)
+//**********************************************************************************
 using Aladdin.HASP;
 using NLog;
 using System;
@@ -41,7 +44,8 @@ namespace com.mirle.ibg3k0.stc.License
             "copyright. MIRLE.3K0";
 
         private static int dataSize = 80;
-        private static string vendorCode =
+        private static string usingVendorCode = null;
+        private static string vendorCode_tw =
             "LE+M1JkdQDfpg4Vpk5A5oKyz6xhjY8zICF/A4LDd4vxqKLkLrbvQeEyXVAV/QESylxDxVbSTxR4Ha2AK" +
             "kJzX1jkZdok18GASOz/5zP3kCWuK4/buzwCYuAHyiiSs5C7P0aGW0gwXM3f9tyPO1WOVu8LEFfulUf2q" +
             "WYf5zplPmk/LAzQzqXl8pzgeeMn2WZ7kNV3rtlNvo/Q+n4NdjeQjU2uTz+yrGBghszCfYsZjk+zL4VDN" +
@@ -55,6 +59,23 @@ namespace com.mirle.ibg3k0.stc.License
             "8/t4yNMumX+ZNw2a8eTM3JIpv2ceZ//FrR1YWJaNAC50Wgb3MfLaOG5FoKAkfAwuhCNMcN2+q88ZExh3" +
             "iLDoel0kgOkWZM2MTuhdp1TS/VnDSLTIxiwZS0jC2UktAJHm2XrX7lMoHuq0j3e19MG8OaJLyMHAZ0un" +
             "P5n5cdxju9bHCMuOyPnYCg==";
+        private static string vendorCode_cn =
+          "HXOd+Iooq8iCE8dR2hwMkEKTvLl80DPN+7jAjV5vz2XZWVzccCKnSs5E9rjYANjF" +
+        "/lOnbOlLYvXLjNi3fYN6Pc1MoTTxqixzAK6mlTqnQqwb3KBfway1yqhYIxjzMvZZ" +
+        "rhl/OtTjVNIjQ4Vd+ULDCvzi3iY5FUP8gGLdQeqvCZCQ/gkJCAJ9CE+nmeFwWOXa" +
+        "Dzzkg7TwJ7vjeYSgj4P8kvrHokgizFxlaRKmxYYZno3T3KX+IUwMwOgAxf9Ms+2g" +
+        "Ki6AyeTOO3MRrdDKhvc01m1TyX0Bn/fNAzgj7u36cqa2Q0zHfEQgOS17FNw6TRwH" +
+        "H7rRutj4HFpMpHA+LZ6JU3y5eJ11Pjgw0kA2uny9S3Pa2yDFXgQPw/VkudloU/m5" +
+        "DDWPZK30mQwhKKaIaa/26/PghwH7QoM4MrdlUuQpuObaEOkiVd7+re5uqh+wv1Ho" +
+        "SbBW0Knu0D7UEuIQFkfLeaVyYomwetXRVoOSXvAxW66elwUm6q57jasB1tYONOQ2" +
+        "BMbvPZjratb8EnmpsZI+Bzg8+ZfFoUvsZAtiKQNV8c24sl0eqGDWvqYkr9beSbuH" +
+        "S47QlIWaYMJf8SMxy26Ty9eOGjCDfxaAuO1amfJbW9Y7+SzhIkZKxgxGpa+PpNAN" +
+        "L+82GdxWgbB2dQmGd5BRl8n6rz0l8CQFEDk+tXc49R5aFm/DaIwwM436RRrE1RXm" +
+        "Ivi8M4EzB2h3id70A1tSSgOBgRIJLAmzvvoi96PjQQ0Esksgv48x6S8Q0CLYOet6" +
+        "DnaEl3AfIY/2LToVIPaPEsTeyjmTWb5FSJdxJbiFNGD8zQIDnXnOZCxGEuNSdVkR" +
+        "gihQOWi9RE/KnrUqzW6g7N696z2J3aCRQeA06hhxb0n7nadjkcdUhqnLPzn5g30+" +
+        "N5L2eQQCesvLHYZMHq59E4B/Ftfke1uYtGEx//TyoM43TOMpNXd4rU0aIzz7aUeb" +
+        "ROn+nNAnKPKT7J2tqoPzTg==";
 
         private static readonly string encryptString = "copyright. MIRLE.3K0"; //A0.01
         private string encryptedString = string.Empty;                         //A0.01
@@ -67,6 +88,7 @@ namespace com.mirle.ibg3k0.stc.License
 
         private ILicenseKeyProtect agent;
         private string localhostname;
+        AppliedArea appliedArea;
 
         private Boolean checkFailFlag = false;
         private Boolean CheckFailFlag
@@ -101,12 +123,33 @@ namespace com.mirle.ibg3k0.stc.License
         public AutomationLicenseKey(ILicenseKeyProtect agent)
         {
             this.agent = agent;
+
+            appliedArea = getAppliedArea("LicenseKeyVandor", AppliedArea.Taiwan);//B0.01
+            usingVendorCode = ChooseUsingVendorCode(appliedArea);           //B0.01
             localhostname = Environment.UserDomainName;
             feature = HaspFeature.FromFeature(1);
             hasp = new Hasp(feature);
             file = hasp.GetFile(HaspFileId.ReadOnly);
             //
             startCheckTimer();
+        }
+
+        private string ChooseUsingVendorCode(AppliedArea appliedArea)
+        {
+            string usingCode = null;
+            switch (appliedArea)
+            {
+                case AppliedArea.Taiwan:
+                    usingCode = vendorCode_tw;
+                    break;
+                case AppliedArea.China:
+                    usingCode = vendorCode_cn;
+                    break;
+                default:
+                    usingCode = vendorCode_tw;
+                    break;
+            }
+            return usingCode;
         }
 
         private async void startCheckTimer()
@@ -190,10 +233,12 @@ namespace com.mirle.ibg3k0.stc.License
                         //hasp.Logout();
                         ReportStatus("Logout", hasp.Logout());      //A0.01
                     }
-                    HaspStatus status = hasp.Login(vendorCode);
+                    //B0.01 HaspStatus status = hasp.Login(VendorCode);
+                    HaspStatus status = hasp.Login(usingVendorCode);//B0.01
+
                     ReportStatus("Login", status);                  //A0.01
 
-                    if (HaspStatus.StatusOk != status && HaspStatus.AlreadyLoggedIn != status 
+                    if (HaspStatus.StatusOk != status && HaspStatus.AlreadyLoggedIn != status
                         && HaspStatus.TerminalServiceDetected != status) //A0.02 
                     {
                         try
@@ -376,9 +421,10 @@ namespace com.mirle.ibg3k0.stc.License
 
         protected void ReportStatus(string action, HaspStatus status)
         {
-            logger.Info(string.Format("SECSTrxControl, HASP Action:[{0}] ,HaspStatus:[{1}]",
+            logger.Info(string.Format("SECSTrxControl, HASP Action:[{0}] ,HaspStatus:[{1}],AppliedArea[{2}]",
                                              action,
-                                             status.ToString()));
+                                             status.ToString(),
+                                             appliedArea)); //B0.01
         }
 
         private void Verbose(string msg)
@@ -389,5 +435,31 @@ namespace com.mirle.ibg3k0.stc.License
         }
         //A0.01 Add End (2/2)
 
+        //B0.01 Start
+        private enum AppliedArea
+        {
+            Taiwan = 1,
+            China = 2
+        }
+        /// <summary>
+        /// 從AppSetting取得設定值，如果找不到該Key的設定值，將會回傳參數指定的預設值
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <param name="defaultValue">預設值</param>
+        /// <returns>System.Int32.</returns>
+        private AppliedArea getAppliedArea(string key, AppliedArea defaultValue)
+        {
+            AppliedArea rtn = defaultValue;
+            try
+            {
+                rtn = (AppliedArea)int.Parse(System.Configuration.ConfigurationManager.AppSettings.Get(key));
+            }
+            catch (Exception e)
+            {
+                logger.Warn("Get Config error[key:{0}][Exception:{1}]", key, e);
+            }
+            return rtn;
+        }
+        //B0.01 End
     }
 }

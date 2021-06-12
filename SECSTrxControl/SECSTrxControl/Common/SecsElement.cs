@@ -10,6 +10,8 @@
 // ------------- -------------  -------------  ------  -----------------------------
 // 2014/05/30    Hayes Chen     N/A            N/A     Initial Release
 //**********************************************************************************
+// 2017/07/21    Kevin Wei      N/A            B0.01   加入UNKNOWN的型別
+//**********************************************************************************
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,8 +39,9 @@ namespace com.mirle.ibg3k0.stc.Common
 //            FixValue = false;
         }
 
-        public enum SecsElementType 
+        public enum SecsElementType
         {
+            TYPE_UNKNOWN = 0, //B0.01
             TYPE_ASCII = 1,
             TYPE_JIS8 = 2,
             TYPE_BINARY = 3,
@@ -120,6 +123,8 @@ namespace com.mirle.ibg3k0.stc.Common
                     return QSACTIVEXLib.SECSII_DATA_TYPE.BOOLEAN_TYPE;
                 case SecsElementType.TYPE_LIST:
                     return QSACTIVEXLib.SECSII_DATA_TYPE.LIST_TYPE;
+                case SecsElementType.TYPE_UNKNOWN:                      //B0.01
+                    return QSACTIVEXLib.SECSII_DATA_TYPE.UNKNOWN_TYPE;  //B0.01
                 default:
                     return QSACTIVEXLib.SECSII_DATA_TYPE.ASCII_TYPE;
             }
