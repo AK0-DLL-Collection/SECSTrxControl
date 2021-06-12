@@ -10,6 +10,7 @@
 // ------------- -------------  -------------  ------  -----------------------------
 // 2014/05/30    Hayes Chen     N/A            N/A     Initial Release
 // 2014/11/06    Hayes Chen     N/A            A0.01   增加Cache SXFY
+// 2021/06/07    Kevin Wei      N/A            A0.02   將Raw Data的資料，複製一份出來避免影響已在轉譯的內容
 //**********************************************************************************
 using System;
 using System.Collections.Generic;
@@ -38,7 +39,7 @@ namespace com.mirle.ibg3k0.stc.Common
         public DateTime EventTime { get; private set; }
 
         public SECSEventArgs(int lID, int deviceID, QSACTIVEXLib.EVENT_ID lMsgID, int S, int F, int W_Bit,
-            int ulSystemBytes, Object rawData, Object head, string pEventText, SECSHandler secsHandler) 
+            int ulSystemBytes, Object rawData, Object head, string pEventText, SECSHandler secsHandler)
         {
             this.ID = lID;
             this.DeviceID = deviceID;
@@ -47,11 +48,27 @@ namespace com.mirle.ibg3k0.stc.Common
             this.F = F;
             this.W_Bit = W_Bit;
             this.SystemBytes = ulSystemBytes;
-            this.RawData = rawData;
+            //A0.02 this.RawData = rawData;
+            this.RawData = CloneByteArray(rawData);//A0.02
             this.Head = head;
             this.EventText = pEventText;
             this.secsHandler = secsHandler;
             this.EventTime = DateTime.Now;
+        }
+        object CloneByteArray(object rawData)
+        {
+            if (rawData is Array)
+            {
+                Array source_array = rawData as Array;
+                int lenth = source_array.Length;
+                byte[] new_array = new byte[lenth];
+                source_array.CopyTo(new_array, 0);
+                return new_array;
+            }
+            else
+            {
+                return rawData;
+            }
         }
 
         public string getEventTime()
